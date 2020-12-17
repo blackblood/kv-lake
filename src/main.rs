@@ -1,4 +1,5 @@
-use mykvstore::LRUCache;
+// pub mod stores;
+use mykvstore::stores::lru::LRUCache;
 use std::io;
 use std::io::Read;
 use std::io::Write;

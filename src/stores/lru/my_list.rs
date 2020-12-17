@@ -1,5 +1,5 @@
 use std::sync::{ Arc, RwLock };
-pub use crate::my_node;
+pub use super::my_node;
 
 pub struct List<T: std::fmt::Display + std::clone::Clone> {
     pub head: Option<Arc<RwLock<my_node::Node<T>>>>,
