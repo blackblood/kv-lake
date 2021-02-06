@@ -1,5 +1,6 @@
-// pub mod stores;
-use mykvstore::stores::lru::LRUCache;
+pub mod stores;
+use stores::lru::LRUCache;
+use stores::lfu::LFUCache;
 use std::io;
 use std::io::Read;
 use std::io::Write;
@@ -32,7 +33,7 @@ fn get_command(raw_input: &str) -> Result<Command<String>, String> {
     }
 }
 
-fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<LRUCache<String>>>) -> io::Result<String> {
+fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<LFUCache<String>>>) -> io::Result<String> {
     loop {
         let mut input_length = [0; 1];
         conn.read(&mut input_length)?;
@@ -59,7 +60,7 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<LRUCache<String>>>)
                     } else {
                         println!("Not found in cache");
                     }
-                    m_cache.print_list();
+                    m_cache.print_map();
                 }
                 Command::QUIT => {
                     println!("quit ack");
@@ -72,7 +73,7 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<LRUCache<String>>>)
 }
 
 fn main() -> io::Result<()> {
-    let lru_cache_ptr = Arc::new(RwLock::new(LRUCache::new()));
+    let lru_cache_ptr = Arc::new(RwLock::new(LFUCache::new()));
     let conn = TcpListener::bind("localhost:8000")?;
     println!("Listening on port 8000");
     for stream in conn.incoming() {
