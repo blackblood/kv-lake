@@ -1,4 +1,4 @@
-use std::sync::{ Arc, RwLock, RwLockWriteGuard };
+use std::sync::{ Arc, RwLock };
 use super::my_node::Node;
 
 pub struct List<T: std::fmt::Display + std::clone::Clone> {

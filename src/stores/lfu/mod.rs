@@ -119,9 +119,9 @@ impl<T: std::fmt::Display + std::clone::Clone> LFUCache<T> {
 
         let new_freq_node_ptr;
         {
-            let mut curr_node = current_node.write().unwrap();
+            let curr_node = current_node.write().unwrap();
             let mut curr_freq_node = curr_node.freq_node.write().unwrap();
-            let mut new_freq_node = frequency_node::FrequencyNode::new(curr_freq_node.frequency + 1);
+            let new_freq_node = frequency_node::FrequencyNode::new(curr_freq_node.frequency + 1);
             new_freq_node_ptr = Arc::new(RwLock::new(new_freq_node));
             if let Some(nxt_freq_node) = curr_freq_node.next.as_ref() {
                 let mut new_fn = new_freq_node_ptr.write().unwrap();
@@ -137,9 +137,29 @@ impl<T: std::fmt::Display + std::clone::Clone> LFUCache<T> {
         }
 
         {
+            let curr_node = current_node.write().unwrap();
+            let mut freq_n = curr_node.freq_node.write().unwrap();
+            if freq_n.list.head.is_none() && freq_n.list.end.is_none() {
+                if let Some(next) = freq_n.next.as_ref() {
+                    if let Some(prev) = freq_n.prev.as_ref() {
+                        next.write().unwrap().prev = Some(Arc::clone(prev));
+                    }
+                }
+                if let Some(prev) = freq_n.prev.as_ref() {
+                    if let Some(next) = freq_n.next.as_ref() {
+                        prev.write().unwrap().next = Some(Arc::clone(next));
+                    }
+                }
+                freq_n.next = None;
+                freq_n.prev = None;
+            }
+        }
+
+        {
             let mut curr_node = current_node.write().unwrap();
             curr_node.freq_node = Arc::clone(&new_freq_node_ptr);
         }
+
         {
             let mut new_freq_node_mut = new_freq_node_ptr.write().unwrap();
             new_freq_node_mut.list.prepend(Arc::clone(&current_node));
