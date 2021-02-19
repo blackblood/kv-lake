@@ -73,6 +73,11 @@ impl<T: std::fmt::Display + std::clone::Clone> LFUCache<T> {
                 }
             }
             println!("Ended list print");
+        } else {
+            if let Some(node) = self.map.get(&key) {
+                let mut node_w = node.write().unwrap();
+                node_w.value = value;
+            }
         }
     }
 
