@@ -4,7 +4,7 @@ use stores::lfu::LFUCache;
 use std::io;
 use std::io::Read;
 use std::io::Write;
-use std::net::{TcpListener, TcpStream};
+use std::net::{TcpListener, TcpStream, Shutdown};
 use std::sync::{Arc, RwLock};
 use std::thread;
 
@@ -37,6 +37,11 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<LFUCache<String>>>)
     loop {
         let mut input_length = [0; 1];
         conn.read(&mut input_length)?;
+        if input_length[0] == 0 {
+            println!("shutting down. bye!");
+            conn.shutdown(Shutdown::Both).expect("failed to shutdown");
+            return Ok("".to_string());
+        }
         let mut input_buffer: Vec<u8> = vec![0; input_length[0] as usize];
         conn.read(&mut input_buffer)?;
         let string_buffer = std::str::from_utf8(&input_buffer).unwrap();
@@ -63,11 +68,17 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<LFUCache<String>>>)
                     m_cache.print_map();
                 }
                 Command::QUIT => {
-                    println!("quit ack");
+                    println!("shutting down. bye!");
+                    conn.shutdown(Shutdown::Both).expect("failed to shutdown");
                     return Ok("".to_string());
                 }
             },
-            Err(_e) => (),
+            Err(_e) => {
+                let output = "unknown command";
+                println!("{}", output);
+                conn.write(&[output.len() as u8]).expect("len socket write failed");
+                conn.write(output.as_bytes()).expect("data socket write failed");
+            },
         };
     }
 }
