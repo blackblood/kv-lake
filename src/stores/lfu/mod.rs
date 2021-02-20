@@ -90,6 +90,17 @@ impl<T: std::fmt::Display + std::clone::Clone> LFUCache<T> {
         }
     }
 
+    pub fn delete(&mut self, key: String) -> Result<(), String> {
+        if let Some(node) = self.map.get(&key) {
+            node.write().unwrap().join_neighbours();
+            self.map.remove(&key);
+            self.total_node_count -= 1;
+            return Ok(())
+        } else {
+            return Err("key not found".to_string())
+        }
+    }
+
     pub fn print_map(&self) {
         for (k, v) in &self.map {
             println!("{}: {}", k, v.read().unwrap().value);

@@ -11,6 +11,7 @@ use std::thread;
 enum Command<T> {
     PUT(String, T),
     GET(String),
+    DEL(String),
     QUIT,
 }
 
@@ -28,6 +29,8 @@ fn get_command(raw_input: &str) -> Result<Command<String>, String> {
         Ok(Command::GET(input_vec[1].to_string()))
     } else if c == "quit" {
         Ok(Command::QUIT)
+    } else if c == "DEL" {
+        Ok(Command::DEL(input_vec[1].to_string()))
     } else {
         Err("Received unknown command".to_string())
     }
@@ -66,6 +69,16 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<LFUCache<String>>>)
                         println!("Not found in cache");
                     }
                     m_cache.print_map();
+                }
+                Command::DEL(key) => {
+                    let mut m_cache = cache.write().unwrap();
+                    let mut output = String::new();
+                    if let Err(msg) = m_cache.delete(key) {
+                        output = msg;
+                    }
+                    println!("output = {}", output);
+                    conn.write(&[output.len() as u8]).expect("len socket write failed");
+                    conn.write(output.as_bytes()).expect("data socket write failed");
                 }
                 Command::QUIT => {
                     println!("shutting down. bye!");
