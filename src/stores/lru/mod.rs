@@ -36,6 +36,16 @@ impl<T: std::fmt::Display + std::clone::Clone> LRUCache<T> {
     }
   }
 
+  pub fn delete(&mut self, key: String) -> Result<(), String> {
+      if let Some(node) = self.map.get(&key) {
+          node.write().unwrap().join_neighbours(&mut self.list);
+          self.map.remove(&key);
+          return Ok(());
+      } else {
+          return Err("key not found".to_string());
+      }
+  }
+
   pub fn print_list(&mut self) {
       for n in self.list.iter() {
           println!("{}", n.read().unwrap().value);

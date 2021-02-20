@@ -95,9 +95,9 @@ impl<T: std::fmt::Display + std::clone::Clone> LFUCache<T> {
             node.write().unwrap().join_neighbours();
             self.map.remove(&key);
             self.total_node_count -= 1;
-            return Ok(())
+            return Ok(());
         } else {
-            return Err("key not found".to_string())
+            return Err("key not found".to_string());
         }
     }
 

@@ -1,4 +1,5 @@
 use std::sync::{ Arc, RwLock };
+use super::my_list;
 
 pub struct Node<T: std::fmt::Display + std::clone::Clone> {
     pub key: String,
@@ -25,6 +26,32 @@ impl<T: std::fmt::Display + std::clone::Clone> Node<T> {
         } else {
             self.prev = None;
         }
+    }
+
+    pub fn join_neighbours(&mut self, list: &mut my_list::List<T>) {
+        if let Some(n_prv) = self.prev.as_deref() {
+            let mut mut_n_prv = n_prv.write().unwrap();
+            if let Some(p) = self.next.as_ref() {
+                mut_n_prv.next = Some(Arc::clone(p));
+            } else {
+                mut_n_prv.next = None;
+                list.end = Some(Arc::clone(self.prev.as_ref().unwrap()));
+            }
+        }
+        if let Some(n_nxt) = self.next.as_deref() {
+            let mut mut_n_nxt = n_nxt.write().unwrap();
+            if let Some(p) = self.prev.as_ref() {
+                mut_n_nxt.prev = Some(Arc::clone(p));
+            } else {
+                mut_n_nxt.prev = None;
+                list.head = Some(Arc::clone(self.next.as_ref().unwrap()));
+            }
+        }
+        if self.prev.is_none() && self.next.is_none() {
+            list.head = None;
+            list.end = None;
+        }
+        list.size -= 1;
     }
 }
 
