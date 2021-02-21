@@ -2,9 +2,9 @@ KV-Lake is a caching server that stores key-value pairs of strings. Currently, s
 This is my attempt to write some networking code and learn about cache eviction strategies while learning the rust programming language.
 
 Available commands:
-PUT key value
-GET key
-DEL key
+1. `PUT key value`
+2. `GET key`
+3. `DEL key`
 
 Basic usage:
 1. Just clone this repo
