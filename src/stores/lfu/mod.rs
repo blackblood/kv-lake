@@ -35,75 +35,12 @@ impl<T: std::fmt::Display + std::clone::Clone> LFUCache<T> {
         FrequencyListIterator { ptr: Some(Arc::clone(&self.frequency_node)) }
     }
 
-    pub fn new() -> LFUCache<T> {
+    pub fn new(queue_size: u32) -> LFUCache<T> {
         LFUCache {
             map: HashMap::new(),
             frequency_node: Arc::new(RwLock::new(frequency_node::FrequencyNode::new(1))),
-            max_length: 5,
+            max_length: queue_size,
             total_node_count: 0
-        }
-    }
-
-    pub fn put(&mut self, key: String, value: T) {
-        if !self.map.contains_key(&key) {
-            let new_node = Arc::new(RwLock::new(my_node::Node::new(key.clone(), value, &self.frequency_node)));
-            {
-                let mut freq_n = self.frequency_node.write().unwrap();
-                if self.total_node_count >= self.max_length {
-                    if let Some(e) = freq_n.list.end.take() {
-                        self.map.remove(&e.read().unwrap().key);
-                        let mut list_end = e.write().unwrap();
-                        if let Some(new_e) = list_end.prev.take() {
-                            new_e.write().unwrap().next = None;
-                            freq_n.list.end = Some(Arc::clone(&new_e));
-                        }
-                        std::mem::drop(&list_end.freq_node);
-                    }
-                    self.total_node_count -= 1;
-                }
-                freq_n.list.prepend(Arc::clone(&new_node));
-                self.map.insert(key.clone(), Arc::clone(&new_node));
-                self.total_node_count += 1;
-            }
-            println!("Starting list print");
-            for fr_n in self.frequency_list_iter() {
-                println!("frequency_node: {}", fr_n.read().unwrap().frequency);
-                for n in fr_n.write().unwrap().list.iter() {
-                    println!("{}", n.read().unwrap().value);
-                }
-            }
-            println!("Ended list print");
-        } else {
-            if let Some(node) = self.map.get(&key) {
-                let mut node_w = node.write().unwrap();
-                node_w.value = value;
-            }
-        }
-    }
-
-    pub fn get(&mut self, key: String) -> Option<T> {
-        if let Some(node) = self.map.get(&key) {
-            LFUCache::move_to_higher_frequency(Arc::clone(&node));
-            return Some(node.read().unwrap().value.clone());
-        } else {
-            return None;
-        }
-    }
-
-    pub fn delete(&mut self, key: String) -> Result<(), String> {
-        if let Some(node) = self.map.get(&key) {
-            node.write().unwrap().join_neighbours();
-            self.map.remove(&key);
-            self.total_node_count -= 1;
-            return Ok(());
-        } else {
-            return Err("key not found".to_string());
-        }
-    }
-
-    pub fn print_map(&self) {
-        for (k, v) in &self.map {
-            println!("{}: {}", k, v.read().unwrap().value);
         }
     }
 
@@ -179,6 +116,71 @@ impl<T: std::fmt::Display + std::clone::Clone> LFUCache<T> {
         {
             let mut new_freq_node_mut = new_freq_node_ptr.write().unwrap();
             new_freq_node_mut.list.prepend(Arc::clone(&current_node));
+        }
+    }
+}
+
+impl<T: std::fmt::Display + std::clone::Clone> super::Cacheable<T> for LFUCache<T> {
+    fn put(&mut self, key: String, value: T) {
+        if !self.map.contains_key(&key) {
+            let new_node = Arc::new(RwLock::new(my_node::Node::new(key.clone(), value, &self.frequency_node)));
+            {
+                let mut freq_n = self.frequency_node.write().unwrap();
+                if self.total_node_count >= self.max_length {
+                    if let Some(e) = freq_n.list.end.take() {
+                        self.map.remove(&e.read().unwrap().key);
+                        let mut list_end = e.write().unwrap();
+                        if let Some(new_e) = list_end.prev.take() {
+                            new_e.write().unwrap().next = None;
+                            freq_n.list.end = Some(Arc::clone(&new_e));
+                        }
+                        std::mem::drop(&list_end.freq_node);
+                    }
+                    self.total_node_count -= 1;
+                }
+                freq_n.list.prepend(Arc::clone(&new_node));
+                self.map.insert(key.clone(), Arc::clone(&new_node));
+                self.total_node_count += 1;
+            }
+            println!("Starting list print");
+            for fr_n in self.frequency_list_iter() {
+                println!("frequency_node: {}", fr_n.read().unwrap().frequency);
+                for n in fr_n.write().unwrap().list.iter() {
+                    println!("{}", n.read().unwrap().value);
+                }
+            }
+            println!("Ended list print");
+        } else {
+            if let Some(node) = self.map.get(&key) {
+                let mut node_w = node.write().unwrap();
+                node_w.value = value;
+            }
+        }
+    }
+
+    fn get(&mut self, key: String) -> Option<T> {
+        if let Some(node) = self.map.get(&key) {
+            LFUCache::move_to_higher_frequency(Arc::clone(&node));
+            return Some(node.read().unwrap().value.clone());
+        } else {
+            return None;
+        }
+    }
+
+    fn delete(&mut self, key: String) -> Result<(), String> {
+        if let Some(node) = self.map.get(&key) {
+            node.write().unwrap().join_neighbours();
+            self.map.remove(&key);
+            self.total_node_count -= 1;
+            return Ok(());
+        } else {
+            return Err("key not found".to_string());
+        }
+    }
+
+    fn print_map(&self) {
+        for (k, v) in &self.map {
+            println!("{}: {}", k, v.read().unwrap().value);
         }
     }
 }

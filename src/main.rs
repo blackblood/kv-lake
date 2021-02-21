@@ -2,11 +2,11 @@ pub mod stores;
 use stores::lru::LRUCache;
 use stores::lfu::LFUCache;
 use std::io;
-use std::io::Read;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream, Shutdown};
 use std::sync::{Arc, RwLock};
 use std::thread;
+use std::env;
 
 enum Command<T> {
     PUT(String, T),
@@ -36,7 +36,7 @@ fn get_command(raw_input: &str) -> Result<Command<String>, String> {
     }
 }
 
-fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<LRUCache<String>>>) -> io::Result<String> {
+fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<dyn stores::Cacheable<String>>>) -> io::Result<String> {
     loop {
         let mut input_length = [0; 1];
         conn.read(&mut input_length)?;
@@ -97,14 +97,25 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<LRUCache<String>>>)
 }
 
 fn main() -> io::Result<()> {
-    let lru_cache_ptr = Arc::new(RwLock::new(LRUCache::new()));
+    let args: Vec<String> = env::args().collect();
+    let queue_size = args[1].to_string().parse::<u32>().unwrap();
+    let eviction_strat = &args[2];
+    let cache_ptr: Arc<RwLock<dyn stores::Cacheable<String> + std::marker::Send + std::marker::Sync>> = if eviction_strat == &"lfu" {
+        println!("Using LFU eviction strategy");
+        Arc::new(RwLock::new(LFUCache::new(queue_size)))
+    } else {
+        println!("Using LRU eviction strategy");
+        Arc::new(RwLock::new(LRUCache::new(queue_size)))
+    };
+    println!("queue size: {}", queue_size);
+
     let conn = TcpListener::bind("localhost:8000")?;
     println!("Listening on port 8000");
     for stream in conn.incoming() {
         let mut sock = stream.unwrap().try_clone().unwrap();
-        let lru_cache_ref = Arc::clone(&lru_cache_ptr);
+        let cache_ref = Arc::clone(&cache_ptr);
         thread::spawn(move || {
-            handle_connection(&mut sock, lru_cache_ref).expect("Handle connection failed.");
+            handle_connection(&mut sock, cache_ref).expect("Handle connection failed.");
         });
     }
     Ok(())

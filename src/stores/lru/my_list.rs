@@ -4,7 +4,7 @@ use super::my_node;
 pub struct List<T: std::fmt::Display + std::clone::Clone> {
     pub head: Option<Arc<RwLock<my_node::Node<T>>>>,
     pub end: Option<Arc<RwLock<my_node::Node<T>>>>,
-    pub size: u8
+    pub size: u32
 }
 
 pub struct ListIterator<T: std::fmt::Display + std::clone::Clone> {
