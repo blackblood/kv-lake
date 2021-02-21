@@ -31,10 +31,9 @@ impl<T: std::fmt::Display + std::clone::Clone> List<T> {
         List { head: None, end: None, size: 0 }
     }
 
-    pub fn iter(&mut self) -> ListIterator<T> {
-        if let Some(h) = self.head.take() {
-            let itr = ListIterator { ptr: Some(Arc::clone(&h)) };
-            self.head = Some(h);
+    pub fn iter(&self) -> ListIterator<T> {
+        if let Some(h) = self.head.as_ref() {
+            let itr = ListIterator { ptr: Some(Arc::clone(h)) };
             return itr;
         } else {
             return ListIterator { ptr: None }

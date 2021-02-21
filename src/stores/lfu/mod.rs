@@ -142,14 +142,6 @@ impl<T: std::fmt::Display + std::clone::Clone> super::Cacheable<T> for LFUCache<
                 self.map.insert(key.clone(), Arc::clone(&new_node));
                 self.total_node_count += 1;
             }
-            // println!("Starting list print");
-            for fr_n in self.frequency_list_iter() {
-                println!("frequency_node: {}", fr_n.read().unwrap().frequency);
-                for n in fr_n.write().unwrap().list.iter() {
-                    println!("{}", n.read().unwrap().value);
-                }
-            }
-            // println!("Ended list print");
         } else {
             if let Some(node) = self.map.get(&key) {
                 let mut node_w = node.write().unwrap();
@@ -181,6 +173,15 @@ impl<T: std::fmt::Display + std::clone::Clone> super::Cacheable<T> for LFUCache<
     fn print_map(&self) {
         for (k, v) in &self.map {
             println!("{}: {}", k, v.read().unwrap().value);
+        }
+    }
+
+    fn print_list(&self) {
+        for fr_n in self.frequency_list_iter() {
+            println!("frequency_node: {}", fr_n.read().unwrap().frequency);
+            for n in fr_n.write().unwrap().list.iter() {
+                println!("{}", n.read().unwrap().value);
+            }
         }
     }
 }

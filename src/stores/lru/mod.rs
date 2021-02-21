@@ -13,12 +13,6 @@ impl<T: std::fmt::Display + std::clone::Clone> LRUCache<T> {
   pub fn new(queue_size: u32) -> LRUCache<T> {
     LRUCache { map: HashMap::new(), list: my_list::List::new(), max_length: queue_size }
   }
-
-  pub fn print_list(&mut self) {
-      for n in self.list.iter() {
-          println!("{}", n.read().unwrap().value);
-      }
-  }
 }
 
 impl<T: std::fmt::Display + std::clone::Clone> super::Cacheable<T> for LRUCache<T> {
@@ -57,6 +51,12 @@ impl<T: std::fmt::Display + std::clone::Clone> super::Cacheable<T> for LRUCache<
     fn print_map(&self) {
         for (k, v) in &self.map {
             println!("{}: {}", k, v.read().unwrap().value);
+        }
+    }
+
+    fn print_list(&self) {
+        for n in self.list.iter() {
+            println!("{}", n.read().unwrap().value);
         }
     }
 }

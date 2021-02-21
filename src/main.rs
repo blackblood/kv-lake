@@ -54,10 +54,13 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<dyn stores::Cacheab
                 Command::PUT(key, value) => {
                     let mut m_cache = cache.write().unwrap();
                     m_cache.put(key.to_string(), String::clone(&value));
-                    m_cache.print_map();
                     let output = format!("Added {}: {}", key, value);
                     conn.write(&[output.len() as u8]).expect("len socket write failed");
                     conn.write(output.as_bytes()).expect("data socket write failed");
+                    println!("hashmap-----------");
+                    m_cache.print_map();
+                    println!("linked list-----------");
+                    m_cache.print_list();
                 }
                 Command::GET(key) => {
                     let mut m_cache = cache.write().unwrap();
@@ -68,7 +71,10 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<dyn stores::Cacheab
                     } else {
                         println!("Not found in cache");
                     }
+                    println!("hashmap-----------");
                     m_cache.print_map();
+                    println!("linked list-----------");
+                    m_cache.print_list();
                 }
                 Command::DEL(key) => {
                     let mut m_cache = cache.write().unwrap();
@@ -79,6 +85,10 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<dyn stores::Cacheab
                     println!("output = {}", output);
                     conn.write(&[output.len() as u8]).expect("len socket write failed");
                     conn.write(output.as_bytes()).expect("data socket write failed");
+                    println!("hashmap-----------");
+                    m_cache.print_map();
+                    println!("linked list-----------");
+                    m_cache.print_list();
                 }
                 Command::QUIT => {
                     println!("shutting down. bye!");

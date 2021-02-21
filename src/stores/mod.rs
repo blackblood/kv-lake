@@ -6,4 +6,5 @@ pub trait Cacheable<T: std::fmt::Display + std::clone::Clone> {
     fn get(&mut self, key: String) -> Option<T>;
     fn delete(&mut self, key: String) -> Result<(), String>;
     fn print_map(&self);
+    fn print_list(&self);
 }
