@@ -47,7 +47,7 @@ impl<T: std::fmt::Display + std::clone::Clone> LFUCache<T> {
     fn get_next_frequency_node(n: &Arc<RwLock<my_node::Node<T>>>) -> Option<Arc<RwLock<frequency_node::FrequencyNode<T>>>> {
         let curr_node = n.read().unwrap();
         let curr_freq_node = curr_node.freq_node.read().unwrap();
-        println!("curr_freq_node.frequency = {}", curr_freq_node.frequency);
+        // println!("curr_freq_node.frequency = {}", curr_freq_node.frequency);
         if let Some(next_freq_node) = curr_freq_node.next.as_ref() {
             if next_freq_node.read().unwrap().frequency == curr_freq_node.frequency + 1 {
                 return Some(Arc::clone(next_freq_node));
@@ -63,7 +63,7 @@ impl<T: std::fmt::Display + std::clone::Clone> LFUCache<T> {
         }
         if let Some(next_freq_node) = LFUCache::get_next_frequency_node(&current_node) {
             let mut next_freq_node_mut = next_freq_node.write().unwrap();
-            println!("next_freq_node.frequency = {}", next_freq_node_mut.frequency);
+            // println!("next_freq_node.frequency = {}", next_freq_node_mut.frequency);
             next_freq_node_mut.list.prepend(Arc::clone(&current_node));
             let mut curr_node = current_node.write().unwrap();
             curr_node.freq_node = Arc::clone(&next_freq_node);
@@ -142,14 +142,14 @@ impl<T: std::fmt::Display + std::clone::Clone> super::Cacheable<T> for LFUCache<
                 self.map.insert(key.clone(), Arc::clone(&new_node));
                 self.total_node_count += 1;
             }
-            println!("Starting list print");
+            // println!("Starting list print");
             for fr_n in self.frequency_list_iter() {
                 println!("frequency_node: {}", fr_n.read().unwrap().frequency);
                 for n in fr_n.write().unwrap().list.iter() {
                     println!("{}", n.read().unwrap().value);
                 }
             }
-            println!("Ended list print");
+            // println!("Ended list print");
         } else {
             if let Some(node) = self.map.get(&key) {
                 let mut node_w = node.write().unwrap();

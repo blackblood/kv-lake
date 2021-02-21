@@ -96,11 +96,54 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<dyn stores::Cacheab
     }
 }
 
+fn get_port_number(args: &Vec<String>) -> u32 {
+    if args[0].is_empty() {
+        println!("defaulting to port: 8000");
+        8000
+    } else {
+        match args[0].to_string().parse::<u32>() {
+            Ok(p) => p,
+            Err(_msg) => {
+                println!("invalid port number. defaulting to 8000");
+                8000
+            }
+        }
+    }
+}
+
+fn get_queue_size(args: &Vec<String>) -> u32 {
+    if args[1].is_empty() {
+        println!("defaulting to queue size: 5");
+        5
+    } else {
+        match args[1].to_string().parse::<u32>() {
+            Ok(qs) => qs,
+            Err(_msg) => {
+                println!("invalid queue size. defaulting to queue size: 5");
+                5
+            }
+        }
+    }
+}
+
 fn main() -> io::Result<()> {
-    let args: Vec<String> = env::args().collect();
-    let queue_size = args[1].to_string().parse::<u32>().unwrap();
-    let eviction_strat = &args[2];
-    let cache_ptr: Arc<RwLock<dyn stores::Cacheable<String> + std::marker::Send + std::marker::Sync>> = if eviction_strat == &"lfu" {
+    let mut args: Vec<String> = env::args().collect();
+    args.pop();
+    let mut port = 8000;
+    let mut queue_size = 5;
+    let mut eviction_strat = "lru";
+    if !args.is_empty() {
+        port = get_port_number(&args);
+        queue_size = get_queue_size(&args);
+        eviction_strat = if args[2].is_empty() {
+            println!("defaulting to lru eviction strategy");
+            "lru"
+        } else {
+            args[2].as_str()
+        };
+    }
+
+    let cache_ptr: Arc<RwLock<dyn stores::Cacheable<String> + std::marker::Send + std::marker::Sync>> = if &eviction_strat == &"lfu" {
         println!("Using LFU eviction strategy");
         Arc::new(RwLock::new(LFUCache::new(queue_size)))
     } else {
@@ -109,8 +152,8 @@ fn main() -> io::Result<()> {
     };
     println!("queue size: {}", queue_size);
 
-    let conn = TcpListener::bind("localhost:8000")?;
-    println!("Listening on port 8000");
+    let conn = TcpListener::bind(format!("localhost:{}", port))?;
+    println!("Listening on port {}", port);
     for stream in conn.incoming() {
         let mut sock = stream.unwrap().try_clone().unwrap();
         let cache_ref = Arc::clone(&cache_ptr);
