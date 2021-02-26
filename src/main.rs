@@ -6,6 +6,7 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream, Shutdown};
 use std::sync::{Arc, RwLock};
 use std::thread;
+use std::collections::VecDeque;
 use std::env;
 
 enum Command<T> {
@@ -18,19 +19,23 @@ enum Command<T> {
 fn get_command(raw_input: &str) -> Result<Command<String>, String> {
     let mut raw_input = raw_input.to_string();
     raw_input.pop(); // removing trailing newline char
-    let input_vec: Vec<&str> = raw_input.split(" ").collect();
-    let c = input_vec[0];
+    let mut input_vec: VecDeque<&str> = raw_input.split(" ").collect::<VecDeque<&str>>();
+    let c = input_vec.pop_front().unwrap();
     if c == "PUT" {
         Ok(Command::PUT(
-            input_vec[1].to_string(),
-            input_vec[2].to_string(),
+            input_vec.pop_front().unwrap().to_string(),
+            input_vec.iter().fold(String::new(), |mut acc, x| {
+                acc.push_str(" ");
+                acc.push_str(x);
+                acc
+            })
         ))
     } else if c == "GET" {
-        Ok(Command::GET(input_vec[1].to_string()))
+        Ok(Command::GET(input_vec.pop_front().unwrap().to_string()))
     } else if c == "quit" {
         Ok(Command::QUIT)
     } else if c == "DEL" {
-        Ok(Command::DEL(input_vec[1].to_string()))
+        Ok(Command::DEL(input_vec.pop_front().unwrap().to_string()))
     } else {
         Err("Received unknown command".to_string())
     }
@@ -106,7 +111,8 @@ fn handle_connection(conn: &mut TcpStream, cache: Arc<RwLock<dyn stores::Cacheab
     }
 }
 
-fn get_port_number(args: &mut Vec<String>) -> u32 {
+fn get_port_number(args: &mut VecDeque<String>) -> u32 {
+    args.pop_front();
     if args.is_empty() {
         println!("defaulting to port: 8000");
         8000
@@ -118,12 +124,12 @@ fn get_port_number(args: &mut Vec<String>) -> u32 {
                 8000
             }
         };
-        args.remove(0);
         port
     }
 }
 
-fn get_queue_size(args: &mut Vec<String>) -> u32 {
+fn get_queue_size(args: &mut VecDeque<String>) -> u32 {
+    args.pop_front();
     if args.is_empty() {
         println!("defaulting to queue size: 5");
         5
@@ -135,14 +141,12 @@ fn get_queue_size(args: &mut Vec<String>) -> u32 {
                 5
             }
         };
-        args.remove(0);
         queue_size
     }
 }
 
 fn main() -> io::Result<()> {
-    let mut args: Vec<String> = env::args().collect();
-    args.remove(0);
+    let mut args: VecDeque<String> = env::args().collect::<VecDeque<String>>();
     let mut port = 8000;
     let mut queue_size = 5;
     let mut eviction_strat = "lru";
